@@ -8,18 +8,20 @@ import (
 )
 
 type RRT[T any] struct {
-	collisionCondition func(point T) bool
-	stopCondition      func(testPoint *Point[T], finish *Point[T]) bool
-	stepDistance       float64
-	maxTries           int
-	startPoint         *Point[T]
-	finishPoint        *Point[T]
+	collisionCondition    func(point T) bool
+	stopCondition         func(testPoint *Point[T], finish *Point[T]) bool
+	stepDistance          float64
+	maxTries              int
+	focusOnFinishEveryTry int
+	startPoint            *Point[T]
+	finishPoint           *Point[T]
 }
 
-func New[T any](stepDistance float64, maxTries int) *RRT[T] {
+func New[T any](stepDistance float64, maxTries int, focusOnFinishEveryTry int) *RRT[T] {
 	return &RRT[T]{
-		stepDistance: stepDistance,
-		maxTries:     maxTries,
+		stepDistance:          stepDistance,
+		maxTries:              maxTries,
+		focusOnFinishEveryTry: focusOnFinishEveryTry,
 	}
 }
 
@@ -62,19 +64,17 @@ func (r *RRT[T]) FindPath(start *Coordinate, finish *Coordinate, world [][]T) []
 	minDistance := math.MaxFloat64
 	var minDistancePoint *Point[T]
 
-	goTofinish := true
 	for try < r.maxTries {
 		minDistance = math.MaxFloat64
 		minDistancePoint = nil
 		try++
-		goTofinish = !goTofinish
 
 		_, lastAdded := lastNodeAdded.Get()
 		if r.stopCondition(lastAdded, r.finishPoint) {
 			break
 		}
 
-		newPoint := r.getRandomPoint(world, goTofinish)
+		newPoint := r.getRandomPoint(world, try)
 		for _, point := range nodes {
 			_, vector := point.Get()
 			distance := Distance(vector, newPoint)
@@ -114,8 +114,8 @@ func (r *RRT[T]) FindPath(start *Coordinate, finish *Coordinate, world [][]T) []
 	return points
 }
 
-func (r *RRT[T]) getRandomPoint(world [][]T, goToFinish bool) *Point[T] {
-	if goToFinish {
+func (r *RRT[T]) getRandomPoint(world [][]T, try int) *Point[T] {
+	if try%r.focusOnFinishEveryTry == 0 {
 		return r.finishPoint
 	}
 
