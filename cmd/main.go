@@ -11,8 +11,8 @@ func main() {
 	stepDistance := 0.1
 	r := rrt.New[string](stepDistance)
 
-	r.AddCollisionCondition(func(point *rrt.Point[string]) bool {
-		return point.Data == "obstacle"
+	r.AddCollisionCondition(func(point string) bool {
+		return point == "obstacle"
 	})
 
 	r.AddStopCondition(func(testPoint *rrt.Point[string], finish *rrt.Point[string]) bool {
@@ -22,30 +22,23 @@ func main() {
 	space := generateClearSpace(128, 128)
 	space = addObstacles(5, 3, space)
 
-	start, finish, err := getStartAndFinishPoints(space)
+	start, finish, err := getStartAndFinishCoordinate(space)
 	if err != nil {
 		panic(err)
 	}
 
-	start.Println()
-	finish.Println()
 	points := r.FindPath(start, finish, space)
 	for _, point := range points {
 		point.Println()
 	}
 }
 
-func generateClearSpace[T string](x, y int) [][]*rrt.Point[T] {
-	var space [][]*rrt.Point[T]
+func generateClearSpace[T string](x, y int) [][]T {
+	var space [][]T
 	for i := 0; i < x; i++ {
-		var line []*rrt.Point[T]
+		var line []T
 		for j := 0; j < y; j++ {
-			point := &rrt.Point[T]{
-				X:    float64(i),
-				Y:    float64(j),
-				Data: "empty",
-			}
-			line = append(line, point)
+			line = append(line, "empty")
 		}
 		space = append(space, line)
 	}
@@ -53,7 +46,7 @@ func generateClearSpace[T string](x, y int) [][]*rrt.Point[T] {
 	return space
 }
 
-func addObstacles[T string](qtd, size int, space [][]*rrt.Point[T]) [][]*rrt.Point[T] {
+func addObstacles[T string](qtd, size int, space [][]T) [][]T {
 	for i := 0; i < qtd; i++ {
 		x := rand.Int()%len(space) - 1
 		y := rand.Int()%len(space[0]) - 1
@@ -64,7 +57,7 @@ func addObstacles[T string](qtd, size int, space [][]*rrt.Point[T]) [][]*rrt.Poi
 	return space
 }
 
-func addObstacle[T string](x, y, size int, space [][]*rrt.Point[T]) [][]*rrt.Point[T] {
+func addObstacle[T string](x, y, size int, space [][]T) [][]T {
 	offset := (size - 1) / 2
 	//fmt.Println(offset)
 
@@ -94,17 +87,17 @@ func addObstacle[T string](x, y, size int, space [][]*rrt.Point[T]) [][]*rrt.Poi
 	for i := minXOffset; i <= maxXOffset; i++ {
 		for j := minYOffset; j <= maxYOffset; j++ {
 			//fmt.Printf("%d - %d\n", i, j)
-			space[i][j].Data = "obstacle"
+			space[i][j] = "obstacle"
 		}
 	}
 
 	return space
 }
 
-func getStartAndFinishPoints[T string](space [][]*rrt.Point[T]) (*rrt.Point[T], *rrt.Point[T], error) {
+func getStartAndFinishCoordinate[T string](space [][]T) (*rrt.Coordinate, *rrt.Coordinate, error) {
 	tries := 10
-	start := &rrt.Point[T]{}
-	finish := &rrt.Point[T]{}
+	var start *rrt.Coordinate
+	var finish *rrt.Coordinate
 
 	found := false
 	for i := 0; i < tries && !found; i++ {
@@ -113,9 +106,9 @@ func getStartAndFinishPoints[T string](space [][]*rrt.Point[T]) (*rrt.Point[T], 
 
 		//fmt.Printf("%d - %d\n", x, y)
 
-		if space[x][y].Data != "obstacle" {
-			space[x][y].Data = "start"
-			start = space[x][y]
+		if space[x][y] != "obstacle" {
+			space[x][y] = "start"
+			start = &rrt.Coordinate{X: float64(x), Y: float64(y)}
 			found = true
 		}
 	}
@@ -130,9 +123,9 @@ func getStartAndFinishPoints[T string](space [][]*rrt.Point[T]) (*rrt.Point[T], 
 
 		//fmt.Printf("%d - %d\n", x, y)
 
-		if space[x][y].Data != "obstacle" && space[x][y].Data != "start" {
-			space[x][y].Data = "finish"
-			finish = space[x][y]
+		if space[x][y] != "obstacle" && space[x][y] != "start" {
+			space[x][y] = "finish"
+			finish = &rrt.Coordinate{X: float64(x), Y: float64(y)}
 			found = true
 		}
 	}

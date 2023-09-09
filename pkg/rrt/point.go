@@ -5,6 +5,11 @@ import (
 	"math"
 )
 
+type Coordinate struct {
+	X float64
+	Y float64
+}
+
 type Point[T any] struct {
 	X    float64
 	Y    float64

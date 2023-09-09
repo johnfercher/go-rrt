@@ -8,11 +8,11 @@ import (
 )
 
 type RRT[T any] struct {
-	collisionCondition func(point *Point[T]) bool
+	collisionCondition func(point T) bool
 	stopCondition      func(testPoint *Point[T], finish *Point[T]) bool
 	stepDistance       float64
-	start              *Point[T]
-	finish             *Point[T]
+	startPoint         *Point[T]
+	finishPoint        *Point[T]
 }
 
 func New[T any](stepDistance float64) *RRT[T] {
@@ -21,7 +21,7 @@ func New[T any](stepDistance float64) *RRT[T] {
 	}
 }
 
-func (r *RRT[T]) AddCollisionCondition(condition func(point *Point[T]) bool) *RRT[T] {
+func (r *RRT[T]) AddCollisionCondition(condition func(point T) bool) *RRT[T] {
 	r.collisionCondition = condition
 	return r
 }
@@ -31,18 +31,25 @@ func (r *RRT[T]) AddStopCondition(condition func(testPoint *Point[T], finish *Po
 	return r
 }
 
-func (r *RRT[T]) FindPath(start *Point[T], finish *Point[T], world [][]*Point[T]) []*Point[T] {
-	r.start = start
-	r.finish = finish
+func (r *RRT[T]) FindPath(start *Coordinate, finish *Coordinate, world [][]T) []*Point[T] {
+	r.startPoint = &Point[T]{
+		X: start.X,
+		Y: start.Y,
+	}
+	r.finishPoint = &Point[T]{
+		X: finish.X,
+		Y: finish.Y,
+	}
+
 	var nodesArray []*tree.Node[*Point[T]]
 	tr := tree.New[*Point[T]]()
 
-	maxDistance := Distance(world[0][0], world[len(world)-1][len(world[0])-1])
+	maxDistance := Distance(&Point[T]{X: 0, Y: 0}, &Point[T]{X: float64(len(world) - 1), Y: float64(len(world[0]) - 1)})
 
 	fmt.Printf("Max Distance: %f\n", maxDistance)
 
 	nodeCounter := 0
-	node := tree.NewNode(nodeCounter, start)
+	node := tree.NewNode[*Point[T]](nodeCounter, r.startPoint)
 	tr.AddRoot(node)
 	nodesArray = append(nodesArray, node)
 
@@ -59,7 +66,7 @@ func (r *RRT[T]) FindPath(start *Point[T], finish *Point[T], world [][]*Point[T]
 		goTofinish = !goTofinish
 
 		_, lastAdded := nodesArray[len(nodesArray)-1].Get()
-		if r.stopCondition(lastAdded, finish) {
+		if r.stopCondition(lastAdded, r.finishPoint) {
 			break
 		}
 
@@ -75,7 +82,7 @@ func (r *RRT[T]) FindPath(start *Point[T], finish *Point[T], world [][]*Point[T]
 
 		fixedPoint := r.getFixedPoint(minDistancePoint, newPoint, world)
 
-		if !r.collisionCondition(fixedPoint) {
+		if !r.collisionCondition(fixedPoint.Data) {
 			nodeCounter++
 			newNode := tree.NewNode(nodeCounter, fixedPoint)
 			ok := tr.Add(nodeCounter-1, newNode)
@@ -96,9 +103,9 @@ func (r *RRT[T]) FindPath(start *Point[T], finish *Point[T], world [][]*Point[T]
 	return points
 }
 
-func (r *RRT[T]) getRandomPoint(world [][]*Point[T], goToFinish bool) *Point[T] {
+func (r *RRT[T]) getRandomPoint(world [][]T, goToFinish bool) *Point[T] {
 	if goToFinish {
-		return r.finish
+		return r.finishPoint
 	}
 
 	x := rand.Int() % len(world)
@@ -111,11 +118,14 @@ func (r *RRT[T]) getRandomPoint(world [][]*Point[T], goToFinish bool) *Point[T] 
 	if y > len(world[0])-1 {
 		y = len(world[0]) - 1
 	}
-	//fmt.Printf("%d, %d\n", x, y)
-	return world[x][y]
+
+	return &Point[T]{
+		X: float64(x),
+		Y: float64(y),
+	}
 }
 
-func (r *RRT[T]) getFixedPoint(minDistancePoint *Point[T], newPoint *Point[T], world [][]*Point[T]) *Point[T] {
+func (r *RRT[T]) getFixedPoint(minDistancePoint *Point[T], newPoint *Point[T], world [][]T) *Point[T] {
 
 	radian := Radian(minDistancePoint, newPoint)
 	x := int(minDistancePoint.X + (math.Sin(radian)*minDistancePoint.X)*r.stepDistance)
@@ -130,6 +140,8 @@ func (r *RRT[T]) getFixedPoint(minDistancePoint *Point[T], newPoint *Point[T], w
 	}
 
 	//fmt.Printf("Min %s, New %s, Fix %s\n", minDistancePoint.GetString(), newPoint.GetString(), world[x][y].GetString())
-
-	return world[x][y]
+	return &Point[T]{
+		X: float64(x),
+		Y: float64(y),
+	}
 }
