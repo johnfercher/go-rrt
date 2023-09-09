@@ -2,42 +2,42 @@ package rrt
 
 import (
 	"fmt"
-	"github.com/johnfercher/go-rrt/pkg/shared"
 	"github.com/johnfercher/go-tree/tree"
 	"math"
 	"math/rand"
 )
 
-type CollisionCondition func(vector3D *shared.Vector3D) bool
-type StopCondition func(testPoint *shared.Vector3D, finish *shared.Vector3D) bool
-
-type RRT struct {
-	collisionCondition CollisionCondition
-	stopCondition      StopCondition
+type RRT[T any] struct {
+	collisionCondition func(point *Point[T]) bool
+	stopCondition      func(testPoint *Point[T], finish *Point[T]) bool
 	stepDistance       float64
+	start              *Point[T]
+	finish             *Point[T]
 }
 
-func New(stepDistance float64) *RRT {
-	return &RRT{
+func New[T any](stepDistance float64) *RRT[T] {
+	return &RRT[T]{
 		stepDistance: stepDistance,
 	}
 }
 
-func (r *RRT) AddCollisionCondition(condition CollisionCondition) *RRT {
+func (r *RRT[T]) AddCollisionCondition(condition func(point *Point[T]) bool) *RRT[T] {
 	r.collisionCondition = condition
 	return r
 }
 
-func (r *RRT) AddStopCondition(condition StopCondition) *RRT {
+func (r *RRT[T]) AddStopCondition(condition func(testPoint *Point[T], finish *Point[T]) bool) *RRT[T] {
 	r.stopCondition = condition
 	return r
 }
 
-func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world [][]*shared.Vector3D) []*tree.Node[*shared.Vector3D] {
-	var nodesArray []*tree.Node[*shared.Vector3D]
-	tr := tree.New[*shared.Vector3D]()
+func (r *RRT[T]) FindPath(start *Point[T], finish *Point[T], world [][]*Point[T]) []*Point[T] {
+	r.start = start
+	r.finish = finish
+	var nodesArray []*tree.Node[*Point[T]]
+	tr := tree.New[*Point[T]]()
 
-	maxDistance := shared.Distance(world[0][0], world[len(world)-1][len(world[0])-1])
+	maxDistance := Distance(world[0][0], world[len(world)-1][len(world[0])-1])
 
 	fmt.Printf("Max Distance: %f\n", maxDistance)
 
@@ -49,34 +49,28 @@ func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world []
 	maxGenerations := 100000
 	generation := 0
 	minDistance := math.MaxFloat64
-	var minDistancePoint *shared.Vector3D
+	var minDistancePoint *Point[T]
 
+	goTofinish := true
 	for generation < maxGenerations {
 		minDistance = math.MaxFloat64
+		minDistancePoint = nil
 		generation++
+		goTofinish = !goTofinish
 
-		_, vector := nodesArray[len(nodesArray)-1].Get()
-		if r.stopCondition(vector, finish) {
+		_, lastAdded := nodesArray[len(nodesArray)-1].Get()
+		if r.stopCondition(lastAdded, finish) {
 			break
 		}
 
-		newPoint := r.getRandomPoint(world)
+		newPoint := r.getRandomPoint(world, goTofinish)
 		for _, point := range nodesArray {
 			_, vector := point.Get()
-			distance := shared.Distance(vector, newPoint)
+			distance := Distance(vector, newPoint)
 			if distance < minDistance {
 				minDistance = distance
 				minDistancePoint = vector
 			}
-		}
-
-		if minDistance < maxDistance*r.stepDistance && !r.collisionCondition(newPoint) {
-			nodeCounter++
-			newNode := tree.NewNode(nodeCounter, newPoint)
-			//newNode.Print("New 1")
-			tr.Add(nodeCounter-1, newNode)
-			nodesArray = append(nodesArray, newNode)
-			continue
 		}
 
 		fixedPoint := r.getFixedPoint(minDistancePoint, newPoint, world)
@@ -84,17 +78,29 @@ func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world []
 		if !r.collisionCondition(fixedPoint) {
 			nodeCounter++
 			newNode := tree.NewNode(nodeCounter, fixedPoint)
-			//newNode.Print("New 2")
-			tr.Add(nodeCounter-1, newNode)
+			ok := tr.Add(nodeCounter-1, newNode)
+			if !ok {
+				fmt.Println("Could not add to tree")
+			}
 			nodesArray = append(nodesArray, newNode)
 		}
 	}
 
 	nodes, _ := tr.Backtrack(nodeCounter)
-	return nodes
+	var points []*Point[T]
+	for _, node := range nodes {
+		_, data := node.Get()
+		points = append(points, data)
+	}
+
+	return points
 }
 
-func (r *RRT) getRandomPoint(world [][]*shared.Vector3D) *shared.Vector3D {
+func (r *RRT[T]) getRandomPoint(world [][]*Point[T], goToFinish bool) *Point[T] {
+	if goToFinish {
+		return r.finish
+	}
+
 	x := rand.Int() % len(world)
 	y := rand.Int() & len(world[0])
 
@@ -109,10 +115,11 @@ func (r *RRT) getRandomPoint(world [][]*shared.Vector3D) *shared.Vector3D {
 	return world[x][y]
 }
 
-func (r *RRT) getFixedPoint(minDistancePoint *shared.Vector3D, newPoint *shared.Vector3D, world [][]*shared.Vector3D) *shared.Vector3D {
-	radian := shared.Radian(minDistancePoint, newPoint)
-	x := int(minDistancePoint.X + (math.Sin(radian)*minDistancePoint.X)*r.stepDistance*2)
-	y := int(minDistancePoint.Y + (math.Cos(radian)*minDistancePoint.Y)*r.stepDistance*2)
+func (r *RRT[T]) getFixedPoint(minDistancePoint *Point[T], newPoint *Point[T], world [][]*Point[T]) *Point[T] {
+
+	radian := Radian(minDistancePoint, newPoint)
+	x := int(minDistancePoint.X + (math.Sin(radian)*minDistancePoint.X)*r.stepDistance)
+	y := int(minDistancePoint.Y + (math.Cos(radian)*minDistancePoint.Y)*r.stepDistance)
 
 	if x > len(world)-1 {
 		x = len(world) - 1
@@ -121,6 +128,8 @@ func (r *RRT) getFixedPoint(minDistancePoint *shared.Vector3D, newPoint *shared.
 	if y > len(world[0])-1 {
 		y = len(world[0]) - 1
 	}
+
+	//fmt.Printf("Min %s, New %s, Fix %s\n", minDistancePoint.GetString(), newPoint.GetString(), world[x][y].GetString())
 
 	return world[x][y]
 }

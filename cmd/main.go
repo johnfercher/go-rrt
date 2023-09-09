@@ -4,20 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"github.com/johnfercher/go-rrt/pkg/rrt"
-	"github.com/johnfercher/go-rrt/pkg/shared"
 	"math/rand"
 )
 
 func main() {
 	stepDistance := 0.1
-	rrt := rrt.New(stepDistance)
+	r := rrt.New[string](stepDistance)
 
-	rrt.AddCollisionCondition(func(vector3D *shared.Vector3D) bool {
-		return vector3D.Z == 1
+	r.AddCollisionCondition(func(point *rrt.Point[string]) bool {
+		return point.Data == "obstacle"
 	})
 
-	rrt.AddStopCondition(func(testPoint *shared.Vector3D, finish *shared.Vector3D) bool {
-		return shared.Distance(testPoint, finish) <= 10
+	r.AddStopCondition(func(testPoint *rrt.Point[string], finish *rrt.Point[string]) bool {
+		return testPoint.DistanceTo(finish) <= 5
 	})
 
 	space := generateClearSpace(128, 128)
@@ -30,19 +29,23 @@ func main() {
 
 	start.Println()
 	finish.Println()
-	nodes := rrt.FindPath(start, finish, space)
-	for _, node := range nodes {
-		id, data := node.Get()
-		fmt.Printf("%d - %s\n", id, data.GetString())
+	points := r.FindPath(start, finish, space)
+	for _, point := range points {
+		point.Println()
 	}
 }
 
-func generateClearSpace(x, y int) [][]*shared.Vector3D {
-	var space [][]*shared.Vector3D
+func generateClearSpace[T string](x, y int) [][]*rrt.Point[T] {
+	var space [][]*rrt.Point[T]
 	for i := 0; i < x; i++ {
-		var line []*shared.Vector3D
+		var line []*rrt.Point[T]
 		for j := 0; j < y; j++ {
-			line = append(line, &shared.Vector3D{X: float64(i), Y: float64(j), Z: 0})
+			point := &rrt.Point[T]{
+				X:    float64(i),
+				Y:    float64(j),
+				Data: "empty",
+			}
+			line = append(line, point)
 		}
 		space = append(space, line)
 	}
@@ -50,7 +53,7 @@ func generateClearSpace(x, y int) [][]*shared.Vector3D {
 	return space
 }
 
-func addObstacles(qtd, size int, space [][]*shared.Vector3D) [][]*shared.Vector3D {
+func addObstacles[T string](qtd, size int, space [][]*rrt.Point[T]) [][]*rrt.Point[T] {
 	for i := 0; i < qtd; i++ {
 		x := rand.Int()%len(space) - 1
 		y := rand.Int()%len(space[0]) - 1
@@ -61,7 +64,7 @@ func addObstacles(qtd, size int, space [][]*shared.Vector3D) [][]*shared.Vector3
 	return space
 }
 
-func addObstacle(x, y, size int, space [][]*shared.Vector3D) [][]*shared.Vector3D {
+func addObstacle[T string](x, y, size int, space [][]*rrt.Point[T]) [][]*rrt.Point[T] {
 	offset := (size - 1) / 2
 	//fmt.Println(offset)
 
@@ -91,17 +94,17 @@ func addObstacle(x, y, size int, space [][]*shared.Vector3D) [][]*shared.Vector3
 	for i := minXOffset; i <= maxXOffset; i++ {
 		for j := minYOffset; j <= maxYOffset; j++ {
 			//fmt.Printf("%d - %d\n", i, j)
-			space[i][j].Z = 1
+			space[i][j].Data = "obstacle"
 		}
 	}
 
 	return space
 }
 
-func getStartAndFinishPoints(space [][]*shared.Vector3D) (*shared.Vector3D, *shared.Vector3D, error) {
+func getStartAndFinishPoints[T string](space [][]*rrt.Point[T]) (*rrt.Point[T], *rrt.Point[T], error) {
 	tries := 10
-	start := &shared.Vector3D{}
-	finish := &shared.Vector3D{}
+	start := &rrt.Point[T]{}
+	finish := &rrt.Point[T]{}
 
 	found := false
 	for i := 0; i < tries && !found; i++ {
@@ -110,8 +113,8 @@ func getStartAndFinishPoints(space [][]*shared.Vector3D) (*shared.Vector3D, *sha
 
 		//fmt.Printf("%d - %d\n", x, y)
 
-		if space[x][y].Z != 1 {
-			space[x][y].Z = 2
+		if space[x][y].Data != "obstacle" {
+			space[x][y].Data = "start"
 			start = space[x][y]
 			found = true
 		}
@@ -127,8 +130,8 @@ func getStartAndFinishPoints(space [][]*shared.Vector3D) (*shared.Vector3D, *sha
 
 		//fmt.Printf("%d - %d\n", x, y)
 
-		if space[x][y].Z != 1 {
-			space[x][y].Z = 3
+		if space[x][y].Data != "obstacle" && space[x][y].Data != "start" {
+			space[x][y].Data = "finish"
 			finish = space[x][y]
 			found = true
 		}
@@ -140,10 +143,10 @@ func getStartAndFinishPoints(space [][]*shared.Vector3D) (*shared.Vector3D, *sha
 	return start, finish, nil
 }
 
-func print(space [][]*shared.Vector3D) {
+func print[T string](space [][]*rrt.Point[T]) {
 	for i := 0; i < len(space); i++ {
 		for j := 0; j < len(space[i]); j++ {
-			fmt.Printf("%0.f ", space[i][j].Z)
+			fmt.Printf("%s ", space[i][j].Data)
 		}
 		fmt.Println()
 	}
