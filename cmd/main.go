@@ -9,8 +9,8 @@ import (
 
 func main() {
 	stepDistance := 0.1
-	maxTries := 1000
-	focusOnFinishEveryTry := 15
+	maxTries := 10000
+	focusOnFinishEveryTry := 3
 	r := rrt.New[string](stepDistance, maxTries, focusOnFinishEveryTry)
 
 	r.AddCollisionCondition(func(point string) bool {
@@ -18,21 +18,19 @@ func main() {
 	})
 
 	r.AddStopCondition(func(testPoint *rrt.Point[string], finish *rrt.Point[string]) bool {
-		return testPoint.DistanceTo(finish) <= 5
+		return testPoint.DistanceTo(finish) <= 1
 	})
 
 	space := generateClearSpace(128, 128)
-	space = addObstacles(5, 3, space)
+	space = addObstacles(10, 20, space)
 
 	start, finish, err := getStartAndFinishCoordinate(space)
 	if err != nil {
 		panic(err)
 	}
 
-	points := r.FindPath(start, finish, space)
-	for _, point := range points {
-		point.Println()
-	}
+	_ = r.FindPathAndSavePdf(start, finish, space, "tree.pdf")
+
 }
 
 func generateClearSpace[T string](x, y int) [][]T {
@@ -86,8 +84,8 @@ func addObstacle[T string](x, y, size int, space [][]T) [][]T {
 	//fmt.Printf("XOffset: %d, %d\n", minXOffset, maxXOffset)
 	//fmt.Printf("YOffset: %d, %d\n", minYOffset, maxYOffset)
 
-	for i := minXOffset; i <= maxXOffset; i++ {
-		for j := minYOffset; j <= maxYOffset; j++ {
+	for i := minXOffset; i < maxXOffset; i++ {
+		for j := minYOffset; j < maxYOffset; j++ {
 			//fmt.Printf("%d - %d\n", i, j)
 			space[i][j] = "obstacle"
 		}

@@ -29,5 +29,5 @@ func (p *Point[T]) Println() {
 }
 
 func (p *Point[T]) GetString() string {
-	return fmt.Sprintf("(%f, %f)", p.X, p.Y)
+	return fmt.Sprintf("(%1.f, %1.f)", p.X, p.Y)
 }

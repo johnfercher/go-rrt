@@ -3,6 +3,7 @@ package rrt
 import (
 	"fmt"
 	"github.com/johnfercher/go-tree/tree"
+	"github.com/jung-kurt/gofpdf"
 	"math"
 	"math/rand"
 )
@@ -36,6 +37,68 @@ func (r *RRT[T]) AddStopCondition(condition func(testPoint *Point[T], finish *Po
 }
 
 func (r *RRT[T]) FindPath(start *Coordinate, finish *Coordinate, world [][]T) []*Point[T] {
+	nodeCounter, tr := r.findPath(start, finish, world)
+
+	pathNodes, _ := tr.Backtrack(nodeCounter)
+	var points []*Point[T]
+	for _, pathNode := range pathNodes {
+		_, data := pathNode.Get()
+		points = append(points, data)
+	}
+
+	return points
+}
+
+func (r *RRT[T]) FindPathAndSavePdf(start *Coordinate, finish *Coordinate, world [][]T, file string) []*Point[T] {
+	scale := 2.0
+	nodeCounter, tr := r.findPath(start, finish, world)
+
+	pathNodes, _ := tr.Backtrack(nodeCounter)
+	var points []*Point[T]
+	for _, pathNode := range pathNodes {
+		_, data := pathNode.Get()
+		points = append(points, data)
+	}
+
+	pdf := gofpdf.NewCustom(&gofpdf.InitType{
+		UnitStr: "mm",
+		Size: gofpdf.SizeType{
+			Wd: float64(len(world)) * scale,
+			Ht: float64(len(world[0])) * scale,
+		},
+	})
+
+	pdf.AddPage()
+
+	for i, line := range world {
+		for j, element := range line {
+			if r.collisionCondition(element) {
+				pdf.Circle(float64(i)*scale, float64(j)*scale, 2, "F")
+			}
+		}
+	}
+
+	pdf.SetLineWidth(0.5)
+	pdf.SetDrawColor(0, 0, 255)
+	pdf.Circle(start.X*scale, start.Y*scale, 2, "")
+	pdf.SetDrawColor(0, 255, 0)
+	pdf.Circle(finish.X*scale, finish.Y*scale, 2, "")
+	pdf.SetDrawColor(255, 0, 0)
+	for i := 0; i < len(points)-1; i++ {
+		pdf.Circle(points[i].X*scale, points[i].Y*scale, 1, "")
+		pdf.Line(points[i].X*scale, points[i].Y*scale, points[i+1].X*scale, points[i+1].Y*scale)
+	}
+
+	fmt.Println("pdf")
+	err := pdf.OutputFileAndClose(file)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	return points
+}
+
+func (r *RRT[T]) findPath(start *Coordinate, finish *Coordinate, world [][]T) (int, *tree.Tree[*Point[T]]) {
 	r.startPoint = &Point[T]{
 		X: start.X,
 		Y: start.Y,
@@ -62,11 +125,11 @@ func (r *RRT[T]) FindPath(start *Coordinate, finish *Coordinate, world [][]T) []
 
 	try := 0
 	minDistance := math.MaxFloat64
-	var minDistancePoint *Point[T]
+	var minNode *tree.Node[*Point[T]]
 
 	for try < r.maxTries {
 		minDistance = math.MaxFloat64
-		minDistancePoint = nil
+		minNode = nil
 		try++
 
 		_, lastAdded := lastNodeAdded.Get()
@@ -80,11 +143,12 @@ func (r *RRT[T]) FindPath(start *Coordinate, finish *Coordinate, world [][]T) []
 			distance := Distance(vector, newPoint)
 			if distance < minDistance {
 				minDistance = distance
-				minDistancePoint = vector
+				minNode = point
 			}
 		}
 
-		fixedPoint := r.getFixedPoint(minDistancePoint, newPoint, world)
+		minID, minPoint := minNode.Get()
+		fixedPoint := r.getFixedPoint(minPoint, newPoint, world)
 
 		if !r.collisionCondition(fixedPoint.Data) {
 			key := r.getKey(fixedPoint)
@@ -92,9 +156,11 @@ func (r *RRT[T]) FindPath(start *Coordinate, finish *Coordinate, world [][]T) []
 				continue
 			}
 
+			fmt.Printf("Min %s, New %s, Fix %s, D: %f\n", minPoint.GetString(), newPoint.GetString(), fixedPoint.GetString(), Distance(minPoint, fixedPoint))
+
 			nodeCounter++
 			newNode := tree.NewNode(nodeCounter, fixedPoint)
-			ok := tr.Add(nodeCounter-1, newNode)
+			ok := tr.Add(minID, newNode)
 			if !ok {
 				fmt.Println("Could not add to tree")
 			}
@@ -104,14 +170,7 @@ func (r *RRT[T]) FindPath(start *Coordinate, finish *Coordinate, world [][]T) []
 		}
 	}
 
-	pathNodes, _ := tr.Backtrack(nodeCounter)
-	var points []*Point[T]
-	for _, pathNode := range pathNodes {
-		_, data := pathNode.Get()
-		points = append(points, data)
-	}
-
-	return points
+	return nodeCounter, tr
 }
 
 func (r *RRT[T]) getRandomPoint(world [][]T, try int) *Point[T] {
@@ -138,7 +197,6 @@ func (r *RRT[T]) getRandomPoint(world [][]T, try int) *Point[T] {
 }
 
 func (r *RRT[T]) getFixedPoint(minDistancePoint *Point[T], newPoint *Point[T], world [][]T) *Point[T] {
-
 	radian := Radian(minDistancePoint, newPoint)
 	x := int(minDistancePoint.X + (math.Sin(radian)*minDistancePoint.X)*r.stepDistance)
 	y := int(minDistancePoint.Y + (math.Cos(radian)*minDistancePoint.Y)*r.stepDistance)
@@ -151,12 +209,14 @@ func (r *RRT[T]) getFixedPoint(minDistancePoint *Point[T], newPoint *Point[T], w
 		y = len(world[0]) - 1
 	}
 
-	//fmt.Printf("Min %s, New %s, Fix %s\n", minDistancePoint.GetString(), newPoint.GetString(), world[x][y].GetString())
-	return &Point[T]{
+	fixed := &Point[T]{
 		X:    float64(x),
 		Y:    float64(y),
 		Data: world[x][y],
 	}
+
+	//fmt.Printf("Min %s, New %s, Fix %s, D: %f\n", minDistancePoint.GetString(), newPoint.GetString(), fixed.GetString(), Distance(minDistancePoint, fixed))
+	return fixed
 }
 
 func (r *RRT[T]) getKey(point *Point[T]) string {
