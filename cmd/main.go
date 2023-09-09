@@ -9,7 +9,8 @@ import (
 
 func main() {
 	stepDistance := 0.1
-	r := rrt.New[string](stepDistance)
+	maxTries := 1000
+	r := rrt.New[string](stepDistance, maxTries)
 
 	r.AddCollisionCondition(func(point string) bool {
 		return point == "obstacle"
