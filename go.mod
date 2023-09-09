@@ -1,4 +1,4 @@
-module github.com/johnfercher/rrt
+module github.com/johnfercher/go-rrt
 
 go 1.21.1
 
