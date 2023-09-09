@@ -2,8 +2,8 @@ package rrt
 
 import (
 	"fmt"
+	"github.com/johnfercher/go-tree/tree"
 	"github.com/johnfercher/rrt/pkg/shared"
-	"github.com/johnfercher/rrt/pkg/tree"
 	"math"
 	"math/rand"
 )
@@ -33,9 +33,9 @@ func (r *RRT) AddStopCondition(condition StopCondition) *RRT {
 	return r
 }
 
-func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world [][]*shared.Vector3D) []*tree.Node {
-	var nodesArray []*tree.Node
-	pointsTree := tree.New()
+func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world [][]*shared.Vector3D) []*tree.Node[*shared.Vector3D] {
+	var nodesArray []*tree.Node[*shared.Vector3D]
+	tr := tree.New[*shared.Vector3D]()
 
 	maxDistance := shared.Distance(world[0][0], world[len(world)-1][len(world[0])-1])
 
@@ -43,7 +43,7 @@ func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world []
 
 	nodeCounter := 0
 	node := tree.NewNode(nodeCounter, start)
-	pointsTree.AddRoot(node)
+	tr.AddRoot(node)
 	nodesArray = append(nodesArray, node)
 
 	maxGenerations := 100000
@@ -55,16 +55,18 @@ func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world []
 		minDistance = math.MaxFloat64
 		generation++
 
-		if r.stopCondition(nodesArray[len(nodesArray)-1].Vector3D, finish) {
+		_, vector := nodesArray[len(nodesArray)-1].Get()
+		if r.stopCondition(vector, finish) {
 			break
 		}
 
 		newPoint := r.getRandomPoint(world)
 		for _, point := range nodesArray {
-			distance := shared.Distance(point.Vector3D, newPoint)
+			_, vector := point.Get()
+			distance := shared.Distance(vector, newPoint)
 			if distance < minDistance {
 				minDistance = distance
-				minDistancePoint = point.Vector3D
+				minDistancePoint = vector
 			}
 		}
 
@@ -72,7 +74,7 @@ func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world []
 			nodeCounter++
 			newNode := tree.NewNode(nodeCounter, newPoint)
 			//newNode.Print("New 1")
-			pointsTree.Add(nodeCounter-1, newNode)
+			tr.Add(nodeCounter-1, newNode)
 			nodesArray = append(nodesArray, newNode)
 			continue
 		}
@@ -83,12 +85,13 @@ func (r *RRT) FindPath(start *shared.Vector3D, finish *shared.Vector3D, world []
 			nodeCounter++
 			newNode := tree.NewNode(nodeCounter, fixedPoint)
 			//newNode.Print("New 2")
-			pointsTree.Add(nodeCounter-1, newNode)
+			tr.Add(nodeCounter-1, newNode)
 			nodesArray = append(nodesArray, newNode)
 		}
 	}
 
-	return pointsTree.Backtrack()
+	nodes, _ := tr.Backtrack(nodeCounter)
+	return nodes
 }
 
 func (r *RRT) getRandomPoint(world [][]*shared.Vector3D) *shared.Vector3D {

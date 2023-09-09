@@ -32,7 +32,8 @@ func main() {
 	finish.Println()
 	nodes := rrt.FindPath(start, finish, space)
 	for _, node := range nodes {
-		node.Print("")
+		id, data := node.Get()
+		fmt.Printf("%d - %s\n", id, data.GetString())
 	}
 }
 

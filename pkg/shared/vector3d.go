@@ -12,6 +12,6 @@ func (v *Vector3D) Println() {
 	fmt.Printf("(%f, %f, %f)\n", v.X, v.Y, v.Z)
 }
 
-func (v *Vector3D) Print() {
-	fmt.Printf("(%f, %f, %f)", v.X, v.Y, v.Z)
+func (v *Vector3D) GetString() string {
+	return fmt.Sprintf("(%f, %f, %f)", v.X, v.Y, v.Z)
 }
