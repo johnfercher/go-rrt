@@ -3,8 +3,8 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/johnfercher/rrt/pkg/rrt"
-	"github.com/johnfercher/rrt/pkg/shared"
+	"github.com/johnfercher/go-rrt/pkg/rrt"
+	"github.com/johnfercher/go-rrt/pkg/shared"
 	"math/rand"
 )
 

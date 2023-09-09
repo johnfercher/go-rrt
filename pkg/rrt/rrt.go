@@ -2,8 +2,8 @@ package rrt
 
 import (
 	"fmt"
+	"github.com/johnfercher/go-rrt/pkg/shared"
 	"github.com/johnfercher/go-tree/tree"
-	"github.com/johnfercher/rrt/pkg/shared"
 	"math"
 	"math/rand"
 )
