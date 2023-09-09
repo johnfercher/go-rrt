@@ -120,8 +120,9 @@ func (r *RRT[T]) getRandomPoint(world [][]T, goToFinish bool) *Point[T] {
 	}
 
 	return &Point[T]{
-		X: float64(x),
-		Y: float64(y),
+		X:    float64(x),
+		Y:    float64(y),
+		Data: world[x][y],
 	}
 }
 
@@ -141,7 +142,8 @@ func (r *RRT[T]) getFixedPoint(minDistancePoint *Point[T], newPoint *Point[T], w
 
 	//fmt.Printf("Min %s, New %s, Fix %s\n", minDistancePoint.GetString(), newPoint.GetString(), world[x][y].GetString())
 	return &Point[T]{
-		X: float64(x),
-		Y: float64(y),
+		X:    float64(x),
+		Y:    float64(y),
+		Data: world[x][y],
 	}
 }
