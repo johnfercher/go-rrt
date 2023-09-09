@@ -1,4 +1,4 @@
-package rrt
+package math
 
 import (
 	"fmt"

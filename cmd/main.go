@@ -2,14 +2,14 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"github.com/johnfercher/go-rrt/pkg/rrt"
+	"github.com/johnfercher/go-rrt/pkg/rrt/math"
 	"math/rand"
 )
 
 func main() {
-	stepDistance := 0.1
-	maxTries := 10000
+	stepDistance := 5
+	maxTries := 1000000
 	focusOnFinishEveryTry := 3
 	r := rrt.New[string](stepDistance, maxTries, focusOnFinishEveryTry)
 
@@ -17,12 +17,12 @@ func main() {
 		return point == "obstacle"
 	})
 
-	r.AddStopCondition(func(testPoint *rrt.Point[string], finish *rrt.Point[string]) bool {
-		return testPoint.DistanceTo(finish) <= 1
+	r.AddStopCondition(func(testPoint *math.Point[string], finish *math.Point[string]) bool {
+		return testPoint.DistanceTo(finish) <= 2
 	})
 
 	space := generateClearSpace(128, 128)
-	space = addObstacles(10, 20, space)
+	space = addObstacles(15, 20, space)
 
 	start, finish, err := getStartAndFinishCoordinate(space)
 	if err != nil {
@@ -30,7 +30,6 @@ func main() {
 	}
 
 	_ = r.FindPathAndSavePdf(start, finish, space, "tree.pdf")
-
 }
 
 func generateClearSpace[T string](x, y int) [][]T {
@@ -94,10 +93,10 @@ func addObstacle[T string](x, y, size int, space [][]T) [][]T {
 	return space
 }
 
-func getStartAndFinishCoordinate[T string](space [][]T) (*rrt.Coordinate, *rrt.Coordinate, error) {
+func getStartAndFinishCoordinate[T string](space [][]T) (*math.Coordinate, *math.Coordinate, error) {
 	tries := 10
-	var start *rrt.Coordinate
-	var finish *rrt.Coordinate
+	var start *math.Coordinate
+	var finish *math.Coordinate
 
 	found := false
 	for i := 0; i < tries && !found; i++ {
@@ -108,7 +107,7 @@ func getStartAndFinishCoordinate[T string](space [][]T) (*rrt.Coordinate, *rrt.C
 
 		if space[x][y] != "obstacle" {
 			space[x][y] = "start"
-			start = &rrt.Coordinate{X: float64(x), Y: float64(y)}
+			start = &math.Coordinate{X: float64(x), Y: float64(y)}
 			found = true
 		}
 	}
@@ -125,7 +124,7 @@ func getStartAndFinishCoordinate[T string](space [][]T) (*rrt.Coordinate, *rrt.C
 
 		if space[x][y] != "obstacle" && space[x][y] != "start" {
 			space[x][y] = "finish"
-			finish = &rrt.Coordinate{X: float64(x), Y: float64(y)}
+			finish = &math.Coordinate{X: float64(x), Y: float64(y)}
 			found = true
 		}
 	}
@@ -134,13 +133,4 @@ func getStartAndFinishCoordinate[T string](space [][]T) (*rrt.Coordinate, *rrt.C
 	}
 
 	return start, finish, nil
-}
-
-func print[T string](space [][]*rrt.Point[T]) {
-	for i := 0; i < len(space); i++ {
-		for j := 0; j < len(space[i]); j++ {
-			fmt.Printf("%s ", space[i][j].Data)
-		}
-		fmt.Println()
-	}
 }

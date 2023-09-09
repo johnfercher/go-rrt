@@ -1,6 +1,8 @@
-package rrt
+package math
 
-import "math"
+import (
+	"math"
+)
 
 func Distance[T any](a *Point[T], b *Point[T]) float64 {
 	return math.Sqrt(((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y)))
