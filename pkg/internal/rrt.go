@@ -133,12 +133,14 @@ func (r *RapidlyExploringRandomTrees[T]) drawInterestPoints(start *math.Coordina
 
 func (r *RapidlyExploringRandomTrees[T]) findPath(start *math.Coordinate, finish *math.Coordinate, world [][]T) (int, *tree.Tree[*math.Point[T]]) {
 	r.StartPoint = &math.Point[T]{
-		X: start.X,
-		Y: start.Y,
+		X:    start.X,
+		Y:    start.Y,
+		Data: world[int(start.X)][int(start.Y)],
 	}
 	r.FinishPoint = &math.Point[T]{
-		X: finish.X,
-		Y: finish.Y,
+		X:    finish.X,
+		Y:    finish.Y,
+		Data: world[int(finish.X)][int(finish.Y)],
 	}
 
 	nodes := make(map[string]*tree.Node[*math.Point[T]])
