@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/johnfercher/go-rrt/pkg/rrt"
 	"github.com/johnfercher/go-rrt/pkg/rrt/math"
 	"math/rand"
@@ -22,12 +21,10 @@ func main() {
 	})
 
 	space := generateClearSpace(128, 128)
-	space = addObstacles(15, 20, space)
+	space = addObstacles(25, 15, space)
 
-	start, finish, err := getStartAndFinishCoordinate(space)
-	if err != nil {
-		panic(err)
-	}
+	start := &math.Coordinate{X: 3, Y: 3}
+	finish := &math.Coordinate{X: 125, Y: 125}
 
 	_ = r.FindPathAndSavePdf(start, finish, space, "tree.pdf")
 }
@@ -46,9 +43,22 @@ func generateClearSpace[T string](x, y int) [][]T {
 }
 
 func addObstacles[T string](qtd, size int, space [][]T) [][]T {
+	border := 3 + size
 	for i := 0; i < qtd; i++ {
 		x := rand.Int()%len(space) - 1
 		y := rand.Int()%len(space[0]) - 1
+
+		if x < border {
+			x = border
+		} else if x > len(space)-border {
+			x = len(space) - border
+		}
+
+		if y < border {
+			y = border
+		} else if y > len(space[0])-border {
+			y = len(space[0]) - border
+		}
 		//fmt.Printf("%d, %d\n", x, y)
 		space = addObstacle(x, y, size, space)
 	}
@@ -91,46 +101,4 @@ func addObstacle[T string](x, y, size int, space [][]T) [][]T {
 	}
 
 	return space
-}
-
-func getStartAndFinishCoordinate[T string](space [][]T) (*math.Coordinate, *math.Coordinate, error) {
-	tries := 10
-	var start *math.Coordinate
-	var finish *math.Coordinate
-
-	found := false
-	for i := 0; i < tries && !found; i++ {
-		x := rand.Int() % len(space)
-		y := rand.Int() % len(space[0])
-
-		//fmt.Printf("%d - %d\n", x, y)
-
-		if space[x][y] != "obstacle" {
-			space[x][y] = "start"
-			start = &math.Coordinate{X: float64(x), Y: float64(y)}
-			found = true
-		}
-	}
-	if !found {
-		return nil, nil, errors.New("not found start point")
-	}
-
-	found = false
-	for i := 0; i < tries && !found; i++ {
-		x := rand.Int() % len(space)
-		y := rand.Int() % len(space[0])
-
-		//fmt.Printf("%d - %d\n", x, y)
-
-		if space[x][y] != "obstacle" && space[x][y] != "start" {
-			space[x][y] = "finish"
-			finish = &math.Coordinate{X: float64(x), Y: float64(y)}
-			found = true
-		}
-	}
-	if !found {
-		return nil, nil, errors.New("not found finish point")
-	}
-
-	return start, finish, nil
 }
