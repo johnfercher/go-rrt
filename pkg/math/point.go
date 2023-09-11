@@ -11,6 +11,13 @@ type Point[T any] struct {
 	Data T
 }
 
+func NewPoint(x int, y int) *Point[any] {
+	return &Point[any]{
+		X: x,
+		Y: y,
+	}
+}
+
 func (p *Point[T]) DistanceTo(other *Point[T]) float64 {
 	pX, pY := float64(p.X), float64(p.Y)
 	oX, oY := float64(other.X), float64(other.Y)

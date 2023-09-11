@@ -3,7 +3,7 @@ package internal_test
 import (
 	"fmt"
 	"github.com/johnfercher/go-rrt/pkg/internal"
-	"github.com/johnfercher/go-rrt/pkg/rrt/math"
+	"github.com/johnfercher/go-rrt/pkg/math"
 	"testing"
 )
 

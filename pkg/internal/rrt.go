@@ -2,7 +2,7 @@ package internal
 
 import (
 	"fmt"
-	"github.com/johnfercher/go-rrt/pkg/rrt/math"
+	"github.com/johnfercher/go-rrt/pkg/math"
 	"github.com/johnfercher/go-tree/tree"
 	"github.com/jung-kurt/gofpdf"
 	builtInMath "math"
@@ -37,7 +37,7 @@ func (r *RapidlyExploringRandomTrees[T]) AddStopCondition(condition func(testPoi
 	r.StopCondition = condition
 }
 
-func (r *RapidlyExploringRandomTrees[T]) FindPath(start *math.Coordinate, finish *math.Coordinate, world [][]T) []*math.Point[T] {
+func (r *RapidlyExploringRandomTrees[T]) FindPath(start *math.Point[any], finish *math.Point[any], world [][]T) []*math.Point[T] {
 	nodeCounter, tr := r.findPath(start, finish, world)
 
 	pathNodes, _ := tr.Backtrack(nodeCounter)
@@ -50,7 +50,7 @@ func (r *RapidlyExploringRandomTrees[T]) FindPath(start *math.Coordinate, finish
 	return points
 }
 
-func (r *RapidlyExploringRandomTrees[T]) FindPathAndSavePdf(start *math.Coordinate, finish *math.Coordinate, world [][]T, file string) []*math.Point[T] {
+func (r *RapidlyExploringRandomTrees[T]) FindPathAndSavePdf(start *math.Point[any], finish *math.Point[any], world [][]T, file string) []*math.Point[T] {
 	nodeCounter, tr := r.findPath(start, finish, world)
 
 	pathNodes, _ := tr.Backtrack(nodeCounter)
@@ -89,49 +89,7 @@ func (r *RapidlyExploringRandomTrees[T]) FindPathAndSavePdf(start *math.Coordina
 	return points
 }
 
-func (r *RapidlyExploringRandomTrees[T]) drawTree(tr *tree.Tree[*math.Point[T]], pdf *gofpdf.Fpdf) {
-	root, _ := tr.GetRoot()
-	r.drawNodeToParent(root, pdf, 0)
-}
-
-func (r *RapidlyExploringRandomTrees[T]) drawNodeToParent(node *tree.Node[*math.Point[T]], pdf *gofpdf.Fpdf, depth int) {
-	_, nodeData := node.Get()
-	nexts := node.GetNexts()
-	for _, next := range nexts {
-		//fmt.Printf("depth: %d, next: %d\n", depth, len(nexts))
-		_, nextData := next.Get()
-		pdf.Circle(float64(nodeData.X)*r.DrawScale, float64(nodeData.Y)*r.DrawScale, 0.5, "")
-		pdf.Line(float64(nodeData.X)*r.DrawScale, float64(nodeData.Y)*r.DrawScale, float64(nextData.X)*r.DrawScale, float64(nextData.Y)*r.DrawScale)
-		r.drawNodeToParent(next, pdf, depth+1)
-	}
-}
-
-func (r *RapidlyExploringRandomTrees[T]) drawPath(points []*math.Point[T], pdf *gofpdf.Fpdf) {
-	pdf.SetDrawColor(255, 0, 0)
-	for i := 0; i < len(points)-1; i++ {
-		pdf.Circle(float64(points[i].X)*r.DrawScale, float64(points[i].Y)*r.DrawScale, 0.5, "")
-		pdf.Line(float64(points[i].X)*r.DrawScale, float64(points[i].Y)*r.DrawScale, float64(points[i+1].X)*r.DrawScale, float64(points[i+1].Y)*r.DrawScale)
-	}
-}
-
-func (r *RapidlyExploringRandomTrees[T]) drawObstacles(world [][]T, pdf *gofpdf.Fpdf) {
-	for i, line := range world {
-		for j, element := range line {
-			if r.CollisionCondition(element) {
-				pdf.Circle(float64(i)*r.DrawScale, float64(j)*r.DrawScale, 2, "F")
-			}
-		}
-	}
-}
-
-func (r *RapidlyExploringRandomTrees[T]) drawInterestPoints(start *math.Coordinate, finish *math.Coordinate, pdf *gofpdf.Fpdf) {
-	pdf.SetDrawColor(0, 0, 255)
-	pdf.Circle(float64(start.X)*r.DrawScale, float64(start.Y)*r.DrawScale, 2, "")
-	pdf.SetDrawColor(0, 255, 0)
-	pdf.Circle(float64(finish.X)*r.DrawScale, float64(finish.Y)*r.DrawScale, 2, "")
-}
-
-func (r *RapidlyExploringRandomTrees[T]) findPath(start *math.Coordinate, finish *math.Coordinate, world [][]T) (int, *tree.Tree[*math.Point[T]]) {
+func (r *RapidlyExploringRandomTrees[T]) findPath(start *math.Point[any], finish *math.Point[any], world [][]T) (int, *tree.Tree[*math.Point[T]]) {
 	r.StartPoint = &math.Point[T]{
 		X:    start.X,
 		Y:    start.Y,
@@ -273,4 +231,46 @@ func (r *RapidlyExploringRandomTrees[T]) GetFixedPoint(minDistancePoint *math.Po
 
 func (r *RapidlyExploringRandomTrees[T]) GetKey(x int, y int) string {
 	return fmt.Sprintf("%d-%d", x, y)
+}
+
+func (r *RapidlyExploringRandomTrees[T]) drawTree(tr *tree.Tree[*math.Point[T]], pdf *gofpdf.Fpdf) {
+	root, _ := tr.GetRoot()
+	r.drawNodeToParent(root, pdf, 0)
+}
+
+func (r *RapidlyExploringRandomTrees[T]) drawNodeToParent(node *tree.Node[*math.Point[T]], pdf *gofpdf.Fpdf, depth int) {
+	_, nodeData := node.Get()
+	nexts := node.GetNexts()
+	for _, next := range nexts {
+		//fmt.Printf("depth: %d, next: %d\n", depth, len(nexts))
+		_, nextData := next.Get()
+		pdf.Circle(float64(nodeData.X)*r.DrawScale, float64(nodeData.Y)*r.DrawScale, 0.5, "")
+		pdf.Line(float64(nodeData.X)*r.DrawScale, float64(nodeData.Y)*r.DrawScale, float64(nextData.X)*r.DrawScale, float64(nextData.Y)*r.DrawScale)
+		r.drawNodeToParent(next, pdf, depth+1)
+	}
+}
+
+func (r *RapidlyExploringRandomTrees[T]) drawPath(points []*math.Point[T], pdf *gofpdf.Fpdf) {
+	pdf.SetDrawColor(255, 0, 0)
+	for i := 0; i < len(points)-1; i++ {
+		pdf.Circle(float64(points[i].X)*r.DrawScale, float64(points[i].Y)*r.DrawScale, 0.5, "")
+		pdf.Line(float64(points[i].X)*r.DrawScale, float64(points[i].Y)*r.DrawScale, float64(points[i+1].X)*r.DrawScale, float64(points[i+1].Y)*r.DrawScale)
+	}
+}
+
+func (r *RapidlyExploringRandomTrees[T]) drawObstacles(world [][]T, pdf *gofpdf.Fpdf) {
+	for i, line := range world {
+		for j, element := range line {
+			if r.CollisionCondition(element) {
+				pdf.Circle(float64(i)*r.DrawScale, float64(j)*r.DrawScale, 2, "F")
+			}
+		}
+	}
+}
+
+func (r *RapidlyExploringRandomTrees[T]) drawInterestPoints(start *math.Point[any], finish *math.Point[any], pdf *gofpdf.Fpdf) {
+	pdf.SetDrawColor(0, 0, 255)
+	pdf.Circle(float64(start.X)*r.DrawScale, float64(start.Y)*r.DrawScale, 2, "")
+	pdf.SetDrawColor(0, 255, 0)
+	pdf.Circle(float64(finish.X)*r.DrawScale, float64(finish.Y)*r.DrawScale, 2, "")
 }

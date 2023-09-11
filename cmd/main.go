@@ -1,8 +1,8 @@
 package main
 
 import (
+	"github.com/johnfercher/go-rrt/pkg/math"
 	"github.com/johnfercher/go-rrt/pkg/rrt"
-	"github.com/johnfercher/go-rrt/pkg/rrt/math"
 	"math/rand"
 )
 
@@ -23,8 +23,8 @@ func main() {
 	space := generateClearSpace(128, 128)
 	space = addObstacles(25, 15, space)
 
-	start := &math.Coordinate{X: 3, Y: 3}
-	finish := &math.Coordinate{X: 125, Y: 125}
+	start := math.NewPoint(3, 3)
+	finish := math.NewPoint(125, 125)
 
 	_ = r.FindPathAndSavePdf(start, finish, space, "tree.pdf")
 }
