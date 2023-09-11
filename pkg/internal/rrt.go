@@ -100,8 +100,8 @@ func (r *RapidlyExploringRandomTrees[T]) drawNodeToParent(node *tree.Node[*math.
 	for _, next := range nexts {
 		//fmt.Printf("depth: %d, next: %d\n", depth, len(nexts))
 		_, nextData := next.Get()
-		pdf.Circle(nodeData.X*r.DrawScale, nodeData.Y*r.DrawScale, 0.5, "")
-		pdf.Line(nodeData.X*r.DrawScale, nodeData.Y*r.DrawScale, nextData.X*r.DrawScale, nextData.Y*r.DrawScale)
+		pdf.Circle(float64(nodeData.X)*r.DrawScale, float64(nodeData.Y)*r.DrawScale, 0.5, "")
+		pdf.Line(float64(nodeData.X)*r.DrawScale, float64(nodeData.Y)*r.DrawScale, float64(nextData.X)*r.DrawScale, float64(nextData.Y)*r.DrawScale)
 		r.drawNodeToParent(next, pdf, depth+1)
 	}
 }
@@ -109,8 +109,8 @@ func (r *RapidlyExploringRandomTrees[T]) drawNodeToParent(node *tree.Node[*math.
 func (r *RapidlyExploringRandomTrees[T]) drawPath(points []*math.Point[T], pdf *gofpdf.Fpdf) {
 	pdf.SetDrawColor(255, 0, 0)
 	for i := 0; i < len(points)-1; i++ {
-		pdf.Circle(points[i].X*r.DrawScale, points[i].Y*r.DrawScale, 0.5, "")
-		pdf.Line(points[i].X*r.DrawScale, points[i].Y*r.DrawScale, points[i+1].X*r.DrawScale, points[i+1].Y*r.DrawScale)
+		pdf.Circle(float64(points[i].X)*r.DrawScale, float64(points[i].Y)*r.DrawScale, 0.5, "")
+		pdf.Line(float64(points[i].X)*r.DrawScale, float64(points[i].Y)*r.DrawScale, float64(points[i+1].X)*r.DrawScale, float64(points[i+1].Y)*r.DrawScale)
 	}
 }
 
@@ -126,21 +126,21 @@ func (r *RapidlyExploringRandomTrees[T]) drawObstacles(world [][]T, pdf *gofpdf.
 
 func (r *RapidlyExploringRandomTrees[T]) drawInterestPoints(start *math.Coordinate, finish *math.Coordinate, pdf *gofpdf.Fpdf) {
 	pdf.SetDrawColor(0, 0, 255)
-	pdf.Circle(start.X*r.DrawScale, start.Y*r.DrawScale, 2, "")
+	pdf.Circle(float64(start.X)*r.DrawScale, float64(start.Y)*r.DrawScale, 2, "")
 	pdf.SetDrawColor(0, 255, 0)
-	pdf.Circle(finish.X*r.DrawScale, finish.Y*r.DrawScale, 2, "")
+	pdf.Circle(float64(finish.X)*r.DrawScale, float64(finish.Y)*r.DrawScale, 2, "")
 }
 
 func (r *RapidlyExploringRandomTrees[T]) findPath(start *math.Coordinate, finish *math.Coordinate, world [][]T) (int, *tree.Tree[*math.Point[T]]) {
 	r.StartPoint = &math.Point[T]{
 		X:    start.X,
 		Y:    start.Y,
-		Data: world[int(start.X)][int(start.Y)],
+		Data: world[start.X][start.Y],
 	}
 	r.FinishPoint = &math.Point[T]{
 		X:    finish.X,
 		Y:    finish.Y,
-		Data: world[int(finish.X)][int(finish.Y)],
+		Data: world[finish.X][finish.Y],
 	}
 
 	nodes := make(map[string]*tree.Node[*math.Point[T]])
@@ -177,7 +177,7 @@ func (r *RapidlyExploringRandomTrees[T]) findPath(start *math.Coordinate, finish
 
 		for _, point := range nodes {
 			_, vector := point.Get()
-			distance := math.Distance(vector, newPoint)
+			distance := vector.DistanceTo(newPoint)
 			if distance < minDistance {
 				minDistance = distance
 				minNode = point
@@ -226,8 +226,8 @@ func (r *RapidlyExploringRandomTrees[T]) GetRandomPoint(world [][]T, try int) (*
 	}
 
 	return &math.Point[T]{
-		X:    float64(x),
-		Y:    float64(y),
+		X:    x,
+		Y:    y,
 		Data: world[x][y],
 	}, true
 }
@@ -240,13 +240,13 @@ func (r *RapidlyExploringRandomTrees[T]) GetRandomXY(world [][]T) (int, int) {
 }
 
 func (r *RapidlyExploringRandomTrees[T]) GetFixedPoint(minDistancePoint *math.Point[T], newPoint *math.Point[T], world [][]T) *math.Point[T] {
-	radian := math.Radian(minDistancePoint, newPoint)
+	radian := minDistancePoint.Atan2To(newPoint)
 
 	deltaX := builtInMath.Sin(radian) * float64(r.StepDistance)
 	deltaY := builtInMath.Cos(radian) * float64(r.StepDistance)
 
-	x := int(minDistancePoint.X) + int(deltaX)
-	y := int(minDistancePoint.Y) + int(deltaY)
+	x := minDistancePoint.X + int(deltaX)
+	y := minDistancePoint.Y + int(deltaY)
 
 	if x < 0 {
 		x = 0
@@ -261,8 +261,8 @@ func (r *RapidlyExploringRandomTrees[T]) GetFixedPoint(minDistancePoint *math.Po
 	}
 
 	fixed := &math.Point[T]{
-		X:    float64(x),
-		Y:    float64(y),
+		X:    x,
+		Y:    y,
 		Data: world[x][y],
 	}
 

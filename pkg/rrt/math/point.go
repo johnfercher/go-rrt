@@ -5,29 +5,26 @@ import (
 	"math"
 )
 
-type Coordinate struct {
-	X float64
-	Y float64
-}
-
 type Point[T any] struct {
-	X    float64
-	Y    float64
+	X    int
+	Y    int
 	Data T
 }
 
 func (p *Point[T]) DistanceTo(other *Point[T]) float64 {
-	return math.Sqrt(((p.X - other.X) * (p.X - other.X)) + ((p.Y - other.Y) * (p.Y - other.Y)))
+	pX, pY := float64(p.X), float64(p.Y)
+	oX, oY := float64(other.X), float64(other.Y)
+
+	return math.Sqrt(((pX - oX) * (pX - oX)) + ((pY - oY) * (pY - oY)))
 }
 
 func (p *Point[T]) Atan2To(other *Point[T]) float64 {
-	return math.Atan2(other.X-p.X, other.Y-p.Y)
-}
+	pX, pY := float64(p.X), float64(p.Y)
+	oX, oY := float64(other.X), float64(other.Y)
 
-func (p *Point[T]) Println() {
-	fmt.Println(p.GetString())
+	return math.Atan2(oX-pX, oY-pY)
 }
 
 func (p *Point[T]) GetString() string {
-	return fmt.Sprintf("(%1.f, %1.f)", p.X, p.Y)
+	return fmt.Sprintf("(%d, %d)", p.X, p.Y)
 }
