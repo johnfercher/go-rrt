@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/johnfercher/go-rrt/pkg/math"
 	"github.com/johnfercher/go-rrt/pkg/rrt"
 	"math/rand"
 )
@@ -10,23 +9,23 @@ func main() {
 	stepDistance := 5
 	maxTries := 1000000
 	focusOnFinishEveryTry := 3
-	r := rrt.New[string](stepDistance, maxTries, focusOnFinishEveryTry)
+	r := rrt.NewRRTWithPDF[string](stepDistance, maxTries, focusOnFinishEveryTry, 2, "tree.pdf")
 
 	r.AddCollisionCondition(func(point string) bool {
 		return point == "obstacle"
 	})
 
-	r.AddStopCondition(func(testPoint *math.Point[string], finish *math.Point[string]) bool {
+	r.AddStopCondition(func(testPoint *rrt.Point[string], finish *rrt.Point[string]) bool {
 		return testPoint.DistanceTo(finish) <= 2
 	})
 
 	space := generateClearSpace(128, 128)
 	space = addObstacles(25, 15, space)
 
-	start := math.NewPoint(3, 3)
-	finish := math.NewPoint(125, 125)
+	start := rrt.NewPoint(3, 3)
+	finish := rrt.NewPoint(125, 125)
 
-	_ = r.FindPathAndSavePdf(start, finish, space, "tree.pdf")
+	_ = r.FindPath(start, finish, space)
 }
 
 func generateClearSpace[T string](x, y int) [][]T {
