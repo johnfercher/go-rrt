@@ -12,7 +12,7 @@ func TestRapidlyExploringRandomTrees_GetFixedPoint(t *testing.T) {
 	min := &rrt.Point[string]{X: 5, Y: 71}
 
 	world := generateClearSpace[string](128, 128)
-	sut := rrt.New[string](0.1, 10000, 15)
+	sut := rrt.New[string](1, 10000, 15)
 
 	// Act
 	fixed := sut.GetFixedPoint(min, new, world)
