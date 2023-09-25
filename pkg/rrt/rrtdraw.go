@@ -2,6 +2,7 @@ package rrt
 
 import (
 	"fmt"
+	"github.com/johnfercher/go-tree/node"
 	"github.com/johnfercher/go-tree/tree"
 	"github.com/jung-kurt/gofpdf"
 )
@@ -72,12 +73,12 @@ func (r *rrtDraw[T]) drawTree(tree *tree.Tree[*Point[T]], pdf *gofpdf.Fpdf) {
 	r.drawNodeToParent(root, pdf, 0)
 }
 
-func (r *rrtDraw[T]) drawNodeToParent(node *tree.Node[*Point[T]], pdf *gofpdf.Fpdf, depth int) {
-	_, nodeData := node.Get()
+func (r *rrtDraw[T]) drawNodeToParent(node *node.Node[*Point[T]], pdf *gofpdf.Fpdf, depth int) {
+	nodeData := node.GetData()
 	nexts := node.GetNexts()
 	for _, next := range nexts {
 		//fmt.Printf("depth: %d, next: %d\n", depth, len(nexts))
-		_, nextData := next.Get()
+		nextData := next.GetData()
 		pdf.Circle(float64(nodeData.X)*r.drawScale, float64(nodeData.Y)*r.drawScale, 0.5, "")
 		pdf.Line(float64(nodeData.X)*r.drawScale, float64(nodeData.Y)*r.drawScale, float64(nextData.X)*r.drawScale, float64(nextData.Y)*r.drawScale)
 		r.drawNodeToParent(next, pdf, depth+1)

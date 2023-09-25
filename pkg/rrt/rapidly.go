@@ -2,6 +2,7 @@ package rrt
 
 import (
 	"fmt"
+	"github.com/johnfercher/go-tree/node"
 	"github.com/johnfercher/go-tree/tree"
 	builtInMath "math"
 	"math/rand"
@@ -46,7 +47,7 @@ func (r *rrt[T]) FindPath(start *Point[any], finish *Point[any], world [][]T) []
 	pathNodes, _ := r.tree.Backtrack(nodeCounter)
 	var points []*Point[T]
 	for _, pathNode := range pathNodes {
-		_, data := pathNode.Get()
+		data := pathNode.GetData()
 		points = append(points, data)
 	}
 
@@ -65,28 +66,28 @@ func (r *rrt[T]) findLastNode(start *Point[any], finish *Point[any], world [][]T
 		Data: world[finish.X][finish.Y],
 	}
 
-	nodes := make(map[string]*tree.Node[*Point[T]])
-	var lastNodeAdded *tree.Node[*Point[T]]
+	nodes := make(map[string]*node.Node[*Point[T]])
+	var lastNodeAdded *node.Node[*Point[T]]
 
 	nodeCounter := 0
-	node := tree.NewNode[*Point[T]](nodeCounter, r.StartPoint)
-	r.tree.AddRoot(node)
-	_, point := node.Get()
-	key := r.GetKey(int(point.X), int(point.Y))
-	nodes[key] = node
+	n := node.New[*Point[T]](r.StartPoint).WithID(nodeCounter)
+	r.tree.AddRoot(n)
+	point := n.GetData()
+	key := r.GetKey(point.X, point.Y)
+	nodes[key] = n
 
-	lastNodeAdded = node
+	lastNodeAdded = n
 
 	try := 0
 	minDistance := builtInMath.MaxFloat64
-	var minNode *tree.Node[*Point[T]]
+	var minNode *node.Node[*Point[T]]
 
 	for try < r.maxTries {
 		minDistance = builtInMath.MaxFloat64
 		minNode = nil
 		try++
 
-		_, lastAdded := lastNodeAdded.Get()
+		lastAdded := lastNodeAdded.GetData()
 		if r.stopCondition(lastAdded, r.FinishPoint) {
 			break
 		}
@@ -97,7 +98,7 @@ func (r *rrt[T]) findLastNode(start *Point[any], finish *Point[any], world [][]T
 		}
 
 		for _, point := range nodes {
-			_, vector := point.Get()
+			vector := point.GetData()
 			distance := vector.DistanceTo(newPoint)
 			if distance < minDistance {
 				minDistance = distance
@@ -105,11 +106,12 @@ func (r *rrt[T]) findLastNode(start *Point[any], finish *Point[any], world [][]T
 			}
 		}
 
-		minID, minPoint := minNode.Get()
+		minID := minNode.GetID()
+		minPoint := minNode.GetData()
 		fixedPoint := r.GetFixedPoint(minPoint, newPoint, world)
 
 		if !r.collisionCondition(fixedPoint.Data) {
-			key := r.GetKey(int(fixedPoint.X), int(fixedPoint.Y))
+			key := r.GetKey(fixedPoint.X, fixedPoint.Y)
 			if _, ok := nodes[key]; ok {
 				continue
 			}
@@ -117,7 +119,7 @@ func (r *rrt[T]) findLastNode(start *Point[any], finish *Point[any], world [][]T
 			//fmt.Printf("Min %s, New %s, Fix %s, D: %f\n", minPoint.GetString(), newPoint.GetString(), fixedPoint.GetString(), math.Distance(minPoint, fixedPoint))
 
 			nodeCounter++
-			newNode := tree.NewNode(nodeCounter, fixedPoint)
+			newNode := node.New(fixedPoint).WithID(nodeCounter)
 			ok := r.tree.Add(minID, newNode)
 			if !ok {
 				fmt.Println("Could not add to tree")
