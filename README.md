@@ -1,4 +1,4 @@
-# Rapidly-Exploring Random Trees
+# go-rrt
 
 [![Visits Badge](https://badges.pufler.dev/visits/johnfercher/go-rrt)](https://badges.pufler.dev)
 
