@@ -1,9 +1,5 @@
 github.com/boombuler/barcode v1.0.0/go.mod h1:paBWMcWSl3LHKBqUq+rly7CNSldXjb2rDl3JlRe0mD8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/johnfercher/go-tree v1.0.1 h1:cNBnEZqDAFB55DJmBKJ2cKtoehe7RJ0/mFLwXqMj1Ek=
-github.com/johnfercher/go-tree v1.0.1/go.mod h1:DUO6QkXIFh1K7jeGBIkLCZaeUgnkdQAsB64FDSoHswg=
-github.com/johnfercher/go-tree v1.0.2 h1:9dZVcUjTAOpjC1Qemuxtl/xJRJjRpc3GOLOc/BOTyo0=
-github.com/johnfercher/go-tree v1.0.2/go.mod h1:DUO6QkXIFh1K7jeGBIkLCZaeUgnkdQAsB64FDSoHswg=
 github.com/johnfercher/go-tree v1.0.5 h1:zpgVhJsChavzhKdxhQiCJJzcSY3VCT9oal2JoA2ZevY=
 github.com/johnfercher/go-tree v1.0.5/go.mod h1:DUO6QkXIFh1K7jeGBIkLCZaeUgnkdQAsB64FDSoHswg=
 github.com/jung-kurt/gofpdf v1.0.0/go.mod h1:7Id9E/uU8ce6rXgefFLlgrJj/GYY22cpxn+r32jIOes=
